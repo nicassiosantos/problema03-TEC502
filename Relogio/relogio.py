@@ -1,6 +1,5 @@
 import time
 import threading
-import curses  
 
 class Relogio:
     def __init__(self, drift):
@@ -30,77 +29,41 @@ class Relogio:
         return self.time
 
 
-def display_time(stdscr, relogio):
-    while relogio.running:
-        stdscr.addstr(0, 0, f"Hora atual do relógio: {relogio.get_time():.2f} segundos")
-        stdscr.refresh()
-        time.sleep(1)
+def show_menu():
+    print("\nMenu:")
+    print("1. Observar a hora atual do relógio")
+    print("2. Inserir um novo valor de drift do relógio")
+    print("3. Inserir um novo valor para a hora do relógio")
+    print("4. Sair")
+    return input("Escolha uma opção: ")
 
 
-def show_menu(stdscr, relogio):
-    stdscr.clear()
-    stdscr.addstr(2, 0, "Menu:")
-    stdscr.addstr(3, 0, "1. Inserir um novo valor de drift do relógio")
-    stdscr.addstr(4, 0, "2. Inserir um novo valor para a hora do relógio")
-    stdscr.addstr(5, 0, "3. Sair")
-    stdscr.addstr(6, 0, "Escolha uma opção: ")
-    stdscr.refresh()
-
-    option = stdscr.getstr(7, 0).decode()
-
-    stdscr.addstr(8, 0, f"Opção escolhida: {option}")
-    stdscr.refresh()
-
-    time.sleep(1)  # Breve pausa para exibir a opção escolhida
-
-    if option == '1':
-        stdscr.addstr(9, 0, "Insira o novo valor de drift: ")
-        stdscr.refresh()
-        new_drift = float(stdscr.getstr(10, 0).decode())
-        relogio.alter_drift(new_drift)
-        stdscr.addstr(11, 0, f"Novo valor de drift ajustado para: {new_drift}")
-        stdscr.refresh()
-    elif option == '2':
-        stdscr.addstr(9, 0, "Insira o novo valor para a hora: ")
-        stdscr.refresh()
-        new_time = float(stdscr.getstr(10, 0).decode())
-        relogio.alter_time(new_time)
-        stdscr.addstr(11, 0, f"Novo valor da hora ajustado para: {new_time}")
-        stdscr.refresh()
-    elif option == '3':
-        relogio.stop()
-        stdscr.addstr(9, 0, "Encerrando...")
-        stdscr.refresh()
-        return False
-    else:
-        stdscr.addstr(9, 0, "Opção inválida. Tente novamente.")
-        stdscr.refresh()
-
-    time.sleep(1)  # Breve pausa para visualizar a mensagem de resposta
-
-    return True
-
-
-def main(stdscr):
-    curses.curs_set(0)  # Esconde o cursor
+def main():
     relogio = Relogio(1.2)
 
     relogio.start()
 
-    # Thread para mostrar o tempo continuamente
-    threading.Thread(target=display_time, args=(stdscr, relogio)).start()
-
     while True:
-        if not show_menu(stdscr, relogio):
+        option = show_menu()
+
+        if option == '1':
+            print(f"Hora atual do relógio: {relogio.get_time():.2f} segundos")
+        elif option == '2':
+            new_drift = float(input("Insira o novo valor de drift: "))
+            relogio.alter_drift(new_drift)
+            print(f"Novo valor de drift ajustado para: {new_drift}")
+        elif option == '3':
+            new_time = float(input("Insira o novo valor para a hora: "))
+            relogio.alter_time(new_time)
+            print(f"Novo valor da hora ajustado para: {new_time}")
+        elif option == '4':
+            relogio.stop()
+            print("Encerrando...")
             break
-
-        time.sleep(0.1)  # Pequena pausa para reduzir a carga de processamento
-
-    curses.nocbreak()
-    stdscr.keypad(False)
-    curses.echo()
-    curses.endwin()
+        else:
+            print("Opção inválida. Tente novamente.")
 
 
 if __name__ == "__main__":
-    curses.wrapper(main)
+    main()
+
