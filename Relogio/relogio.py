@@ -1,69 +1,123 @@
 import time
 import threading
+import requests
 
 class Relogio:
-    def __init__(self, drift):
-        self.time = 0
-        self.drift = drift
-        self.running = False
+    def __init__(self, drift, relogios, id_relogio):
+        self.id = id_relogio  # ID do relógio atual
+        self.time = 0  # Tempo inicial do relógio
+        self.drift = drift  # Drift do relógio
+        self.running = False  # Flag para controlar se o relógio está rodando
+        self.relogios = relogios  # Dicionário de relógios na rede
+        self.master = False  # Flag para indicar se o relógio é mestre
 
     def start(self):
         self.running = True
+        # Inicia a thread para incrementar o tempo do relógio
         threading.Thread(target=self.run).start()
+        # Inicia a thread para sincronizar o relógio automaticamente
+        threading.Thread(target=self.auto_synchronize).start()
 
     def run(self):
         while self.running:
-            time.sleep(self.drift)
-            self.time += 1
+            time.sleep(self.drift)  # Espera pelo intervalo de drift
+            self.time += 1  # Incrementa o tempo do relógio
 
     def stop(self):
-        self.running = False
+        self.running = False  # Para a execução do relógio
 
     def alter_drift(self, drift):
-        self.drift = drift
+        self.drift = drift  # Altera o drift do relógio
 
     def alter_time(self, time):
-        self.time = time
+        self.time = time  # Altera o tempo do relógio
 
     def get_time(self):
-        return self.time
+        return self.time  # Retorna o tempo atual do relógio
 
+    def synchronize(self):
+        start_time = time.time()  # Marca o início da sincronização
 
-def show_menu():
-    print("\nMenu:")
-    print("1. Observar a hora atual do relógio")
-    print("2. Inserir um novo valor de drift do relógio")
-    print("3. Inserir um novo valor para a hora do relógio")
-    print("4. Sair")
-    return input("Escolha uma opção: ")
+        # Coleta os tempos dos outros relógios
+        request_times = self.collect_times()
 
+        # Calcula os novos tempos baseados nos tempos coletados
+        new_times, times = self.calculate_new_times(request_times)
 
-def main():
-    relogio = Relogio(1.2)
+        # Ajusta todos os relógios com os novos tempos calculados
+        self.adjust_all_clocks(new_times, request_times)
 
-    relogio.start()
+        end_time = time.time()  # Marca o fim da sincronização
+        print(f"Sincronização completa em {end_time - start_time:.2f} segundos")
 
-    while True:
-        option = show_menu()
+    def collect_times(self):
+        request_times = {}  # Dicionário para armazenar os tempos das requisições
+        threads = []  # Lista para armazenar as threads de requisição
 
-        if option == '1':
-            print(f"Hora atual do relógio: {relogio.get_time():.2f} segundos")
-        elif option == '2':
-            new_drift = float(input("Insira o novo valor de drift: "))
-            relogio.alter_drift(new_drift)
-            print(f"Novo valor de drift ajustado para: {new_drift}")
-        elif option == '3':
-            new_time = float(input("Insira o novo valor para a hora: "))
-            relogio.alter_time(new_time)
-            print(f"Novo valor da hora ajustado para: {new_time}")
-        elif option == '4':
-            relogio.stop()
-            print("Encerrando...")
-            break
-        else:
-            print("Opção inválida. Tente novamente.")
+        for relogio_id, relogio_info in self.relogios.items():
+            if relogio_id != self.id:  # Evita requisitar o próprio tempo
+                # Cria uma thread para requisitar o tempo do relógio
+                thread = threading.Thread(target=self.request_time, args=(relogio_id, relogio_info, request_times))
+                threads.append(thread)
+                thread.start()
 
+        for thread in threads:
+            thread.join()  # Espera todas as threads terminarem
 
-if __name__ == "__main__":
-    main()
+        return request_times
 
+    def calculate_new_times(self, request_times):
+        new_times = {}  # Dicionário para armazenar os novos tempos calculados
+        times = {}  # Dicionário para armazenar os tempos médios
+
+        for relogio_id, relogio_info in self.relogios.items():
+            if relogio_id != self.id and relogio_id in request_times and 'response_time' in request_times[relogio_id]:
+                # Calcula o tempo médio de resposta para o relógio
+                time0 = request_times[relogio_id]['request_time']
+                time1 = request_times[relogio_id]['response_time']
+                avg_time = int((time1 - time0) / 2)
+                new_times[relogio_id] = self.get_time() + avg_time  # Novo tempo ajustado
+                times[relogio_id] = avg_time
+
+        times[self.id] = self.get_time()  # Adiciona o tempo do relógio atual
+
+        return new_times, times
+
+    def adjust_all_clocks(self, new_times, request_times):
+        for relogio_id, relogio_info in self.relogios.items():
+            if relogio_id != self.id and relogio_id in request_times and 'response_time' in request_times[relogio_id]:
+                # Calcula o ajuste necessário e realiza o ajuste no relógio
+                adjustment = self.get_time() + request_times[relogio_id]['avg_time']
+                self.adjust_time(relogio_id, relogio_info, adjustment, new_times=new_times)
+
+    def auto_synchronize(self):
+        while self.running:
+            if self.master:  # Apenas sincroniza se o relógio for mestre
+                self.synchronize()
+            time.sleep(4)  # Espera 4 segundos antes de sincronizar novamente
+
+    def request_time(self, relogio_id, relogio_info, request_times):
+        try:
+            request_times[relogio_id] = {
+                'request_time': self.get_time()  # Marca o tempo da requisição
+            }
+            # Realiza a requisição para obter o tempo do relógio
+            response = requests.get(f"{relogio_info['url']}/get_time/{relogio_id}")
+            if response.status_code == 200:
+                request_times[relogio_id]['response_time'] = self.get_time()  # Marca o tempo da resposta
+                request_times[relogio_id]['avg_time'] = int((self.get_time() - request_times[relogio_id]['request_time']) / 2)
+                request_times[relogio_id]['time'] = float(response.json()['time'])  # Armazena o tempo do relógio
+        except requests.exceptions.RequestException:
+            pass  # Ignora exceções de requisição
+
+    def adjust_time(self, relogio_id, relogio_info, adjustment, new_times=None):
+        try:
+            # Realiza a requisição para ajustar o tempo do relógio
+            requests.post(f"{relogio_info['url']}/adjust_time", json={'adjustment': adjustment, 'new_times': new_times})
+            # Atualiza os tempos na instância local se new_times for fornecido
+            if new_times:
+                for rid, time_value in new_times.items():
+                    if rid in self.relogios:
+                        self.relogios[rid]['time'] = time_value
+        except requests.exceptions.RequestException:
+            pass  # Ignora exceções de requisição
