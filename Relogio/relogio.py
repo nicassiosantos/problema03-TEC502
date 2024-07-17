@@ -52,7 +52,7 @@ class Relogio:
 
         end_time = time.time()  # Marca o fim da sincronização
         self.last_sync_time = end_time  # Atualiza o tempo da última sincronização
-        ##print(f"Sincronização completa em {end_time - start_time:.2f} segundos")
+        print(f"Sincronização completa em {end_time - start_time:.2f} segundos")
 
     def collect_times(self):
         request_times = {}  # Dicionário para armazenar os tempos das requisições
@@ -129,7 +129,7 @@ class Relogio:
     def monitor_master(self):
         while self.running:
             if not self.master:  # Apenas monitora se não for mestre
-                print('Eu não sou o mestre')
+                #print('Eu não sou o mestre')
                 time_since_last_sync = time.time() - self.last_sync_time
                 if time_since_last_sync > 10:  # Se passaram mais de 10 segundos desde a última sincronização
                     print('verificando')
@@ -138,12 +138,12 @@ class Relogio:
                         # Tenta se eleger como novo mestre
                         self.elect_new_master()
             time.sleep(4)  # Verifica a cada 4 segundos
-            print('Eu sou o mestre')
+            #print('Eu sou o mestre')
 
     def is_master_alive(self):
         max_time = 0
         master_id = None
-        print(self.relogios)
+        #print(self.relogios)
         # Encontrar o relógio com o maior tempo
         for relogio_id, relogio_info in self.relogios.items():
             if relogio_id != self.id and 'time' in relogio_info:
