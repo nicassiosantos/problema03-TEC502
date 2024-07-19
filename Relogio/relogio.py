@@ -76,7 +76,7 @@ class Relogio:
                 time0 = request_times[relogio_id]['request_time']
                 time1 = request_times[relogio_id]['response_time']
                 avg_time = int((time1 - time0) / 2)
-                new_times[relogio_id] = self.get_time() + avg_time  # Novo tempo ajustado
+                new_times[relogio_id] = request_times[relogio_id]['time'] + avg_time  # Novo tempo ajustado
                 times[relogio_id] = avg_time
 
         times[self.id] = self.get_time()  # Adiciona o tempo do relógio atual
@@ -87,8 +87,8 @@ class Relogio:
         for relogio_id, relogio_info in self.relogios.items():
             if relogio_id != self.id and relogio_id in request_times and 'response_time' in request_times[relogio_id]:
                 # Calcula o ajuste necessário e realiza o ajuste no relógio
-                adjustment = self.get_time() + request_times[relogio_id]['avg_time']
-                self.adjust_time(relogio_id, relogio_info, adjustment, new_times=new_times)
+                request_times[relogio_id]['time'] = request_times[relogio_id]['time'] + request_times[relogio_id]['avg_time']
+                self.adjust_time(relogio_info, new_times)
 
     def auto_synchronize(self):
         while self.running:
@@ -110,10 +110,11 @@ class Relogio:
         except requests.exceptions.RequestException:
             pass  # Ignora exceções de requisição
 
-    def adjust_time(self, relogio_id, relogio_info, adjustment, new_times=None):
+    def adjust_time(self, relogio_info, new_times):
         try:
             # Realiza a requisição para ajustar o tempo do relógio
-            requests.post(f"{relogio_info['url']}/adjust_time", json={'adjustment': adjustment, 'new_times': new_times})
+            new_times[f'{self.id}'] = self.get_time()
+            requests.post(f"{relogio_info['url']}/adjust_time", json={'new_times': new_times})
             # Atualiza os tempos na instância local se new_times for fornecido
             if new_times:
                 for rid, time_value in new_times.items():

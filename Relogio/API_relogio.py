@@ -13,7 +13,7 @@ log.setLevel(logging.ERROR)
 
 # Configurações do Relógio e Rede
 # ID do relógio corrente obtido de variáveis de ambiente (padrão: '2')
-ID_RELOGIO = os.getenv('ID_RELOGIO', '2')
+ID_RELOGIO = os.getenv('ID_RELOGIO', '1')
 
 # IP e porta dos relógios configurados via variáveis de ambiente (com valores padrão)
 IP_RELOGIO1 = os.getenv('IP_RELOGIO1', "127.0.0.1")
@@ -49,12 +49,11 @@ def get_time(id):
 @app.route('/adjust_time', methods=['POST'])
 def adjust_time():
     data = request.get_json()
-    adjustment = float(data.get('adjustment', 0))
     new_times = data.get('new_times', {})
 
     try:
-        relogio.alter_time(adjustment)
         # Atualiza os tempos dos relógios na instância de Relogio
+    
         for relogio_id, new_time in new_times.items():
             if relogio_id in relogio.relogios:
                 relogio.relogios[relogio_id]['time'] = new_time
