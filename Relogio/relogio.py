@@ -10,6 +10,7 @@ class Relogio:
         self.running = False  # Flag para controlar se o relógio está rodando
         self.relogios = relogios  # Dicionário de relógios na rede
         self.master = False  # Flag para indicar se o relógio é mestre
+        self.last_sync_time = time.time()
 
     def start(self):
         self.running = True
@@ -17,6 +18,8 @@ class Relogio:
         threading.Thread(target=self.run).start()
         # Inicia a thread para sincronizar o relógio automaticamente
         threading.Thread(target=self.auto_synchronize).start()
+        # Inicia a thread para monitorar o mestre
+        threading.Thread(target=self.monitor_master).start()
 
     def run(self):
         while self.running:
@@ -48,6 +51,7 @@ class Relogio:
         self.adjust_all_clocks(new_times, request_times)
 
         end_time = time.time()  # Marca o fim da sincronização
+        self.last_sync_time = end_time  # Atualiza o tempo da última sincronização
         print(f"Sincronização completa em {end_time - start_time:.2f} segundos")
 
     def collect_times(self):
@@ -122,3 +126,56 @@ class Relogio:
                         self.relogios[rid]['time'] = time_value
         except requests.exceptions.RequestException:
             pass  # Ignora exceções de requisição
+
+    def monitor_master(self):
+        while self.running:
+            if not self.master:  # Apenas monitora se não for mestre
+                #print('Eu não sou o mestre')
+                time_since_last_sync = time.time() - self.last_sync_time
+                if time_since_last_sync > 10:  # Se passaram mais de 10 segundos desde a última sincronização
+                    print('verificando')
+                    # Verifica se o mestre ainda está online
+                    if not self.is_master_alive():
+                        # Tenta se eleger como novo mestre
+                        self.elect_new_master()
+            time.sleep(4)  # Verifica a cada 4 segundos
+            #print('Eu sou o mestre')
+
+    def is_master_alive(self):
+        max_time = 0
+        master_id = None
+        #print(self.relogios)
+        # Encontrar o relógio com o maior tempo
+        for relogio_id, relogio_info in self.relogios.items():
+            if relogio_id != self.id and 'time' in relogio_info:
+                if relogio_info['time'] > max_time:
+                    max_time = relogio_info['time']
+                    master_id = relogio_id
+
+        # Verificar se o relógio com o maior tempo está vivo
+        if master_id:
+            try:
+                response = requests.get(f"{self.relogios[master_id]['url']}/get_time/{master_id}")
+                if response.status_code == 200:
+                    return True
+            except requests.exceptions.RequestException:
+                return False
+
+        return False
+
+    def elect_new_master(self):
+        highest_time = self.get_time()
+        potential_master_id = self.id
+
+        for relogio_id, relogio_info in self.relogios.items():
+            if relogio_id != self.id:
+                relogio_time = relogio_info['time']
+                if relogio_time > highest_time:
+                    highest_time = relogio_time
+                    potential_master_id = relogio_id
+
+        if potential_master_id == self.id:
+            self.master = True
+            print("Este relógio agora é o novo mestre.")
+        else:
+            print(f"O relógio {potential_master_id} foi eleito como o novo mestre.")

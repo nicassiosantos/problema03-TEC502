@@ -63,6 +63,17 @@ def adjust_time():
         print(f"Ocorreu uma exceção {e}")
         return jsonify({'message': 'Erro ao tentar ajustar o tempo'}), 500
 
+
+@app.route('/is_master_alive', methods=['GET'])
+def is_master_alive():
+    print('entrou cá')
+    return jsonify({'master_alive': relogio.is_master_alive()}), 200
+
+@app.route('/elect_new_master', methods=['POST'])
+def elect_new_master():
+    relogio.elect_new_master()
+    return jsonify({'message': 'Eleição de novo mestre realizada'}), 200
+
 # Função para monitorar a hora do relógio em tempo real
 def monitor_clock():
     print("\nModo de Monitoramento de Hora do Relógio (Pressione qualquer tecla para voltar ao menu):")
@@ -72,6 +83,9 @@ def monitor_clock():
         time.sleep(1)
         if input('\r') != '':
             break
+
+
+
 
 # Função para exibir o menu e capturar as opções do usuário
 def show_menu():
@@ -104,6 +118,9 @@ def show_menu():
             break
         else:
             print("Opção inválida. Tente novamente.")
+
+
+
 
 # Função principal que inicia o relógio e exibe o menu
 def main():
