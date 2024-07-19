@@ -84,9 +84,6 @@ def monitor_clock():
         if input('\r') != '':
             break
 
-
-
-
 # Função para exibir o menu e capturar as opções do usuário
 def show_menu():
     while True:

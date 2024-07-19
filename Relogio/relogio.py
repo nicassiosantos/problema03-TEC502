@@ -22,9 +22,14 @@ class Relogio:
         threading.Thread(target=self.monitor_master).start()
 
     def run(self):
+
+        if self.id == '1': 
+            self.master == True
+
         while self.running:
             time.sleep(self.drift)  # Espera pelo intervalo de drift
             self.time += 1  # Incrementa o tempo do relógio
+
 
     def stop(self):
         self.running = False  # Para a execução do relógio
