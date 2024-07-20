@@ -16,15 +16,15 @@ app = Flask(__name__)
 ID_RELOGIO = os.getenv('ID_RELOGIO', '2')
 
 # IP e porta dos relógios configurados via variáveis de ambiente (com valores padrão)
-IP_RELOGIO1 = os.getenv('IP_RELOGIO1', "127.0.0.1")
+IP_RELOGIO1 = os.getenv('IP_RELOGIO1', "0.0.0.0")
 PORTA_RELOGIO1 = os.getenv('PORTA_RELOGIO1', '4578')
 URL_RELOGIO1 = f"http://{IP_RELOGIO1}:{PORTA_RELOGIO1}"
 
-IP_RELOGIO2 = os.getenv('IP_RELOGIO2', "127.0.0.2")
+IP_RELOGIO2 = os.getenv('IP_RELOGIO2', "0.0.0.0")
 PORTA_RELOGIO2 = os.getenv('PORTA_RELOGIO2', '4574')
 URL_RELOGIO2 = f"http://{IP_RELOGIO2}:{PORTA_RELOGIO2}"
 
-IP_RELOGIO3 = os.getenv('IP_RELOGIO3', "127.0.0.3")
+IP_RELOGIO3 = os.getenv('IP_RELOGIO3', "0.0.0.0")
 PORTA_RELOGIO3 = os.getenv('PORTA_RELOGIO3', '4572')
 URL_RELOGIO3 = f"http://{IP_RELOGIO3}:{PORTA_RELOGIO3}"
 
