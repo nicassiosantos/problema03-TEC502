@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clock Time Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        #clock-title {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        #time-display {
+            font-size: 3em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        label {
+            margin-right: 10px;
+        }
+        input {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="clock-title">Relógio ID: Loading...</div>
+    <div id="time-display">Loading...</div>
+
+    <div class="input-group">
+        <label for="new-time">New Time:</label>
+        <input type="text" id="new-time" placeholder="Enter new time">
+        <button onclick="alterTime()">Set Time</button>
+    </div>
+    
+    <div class="input-group">
+        <label for="new-drift">New Drift:</label>
+        <input type="text" id="new-drift" placeholder="Enter new drift">
+        <button onclick="alterDrift()">Set Drift</button>
+    </div>
+
+    <script>
+        function fetchTime() {
+            const id = '1'; // Substitua pelo ID desejado
+            fetch(`/get_time/${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('time-display').innerText = data.time;
+                })
+                .catch(error => {
+                    console.error('Error fetching time:', error);
+                });
+        }
+
+        function fetchClockId() {
+            fetch('/get_clock_id')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('clock-title').innerText = `Relógio ID: ${data.clock_id}`;
+                })
+                .catch(error => {
+                    console.error('Error fetching clock ID:', error);
+                });
+        }
+
+        function alterTime() {
+            const newTime = document.getElementById('new-time').value;
+            fetch('/alter_time', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ new_time: newTime }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            })
+            .catch(error => {
+                console.error('Error altering time:', error);
+            });
+        }
+
+        function alterDrift() {
+            const newDrift = document.getElementById('new-drift').value;
+            fetch('/alter_drift', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ new_drift: newDrift }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            })
+            .catch(error => {
+                console.error('Error altering drift:', error);
+            });
+        }
+
+        // Atualizar a cada segundo (1000 ms)
+        setInterval(fetchTime, 1000);
+
+        // Carregar imediatamente na inicialização
+        fetchTime();
+        fetchClockId();
+    </script>
+</body>
+</html>
