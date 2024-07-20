@@ -11,6 +11,7 @@ class Relogio:
         self.relogios = relogios  # Dicionário de relógios na rede
         self.master = False  # Flag para indicar se o relógio é mestre
         self.last_sync_time = time.time()
+        self.lock = threading.Lock()
 
     def start(self):
         self.running = True
@@ -24,7 +25,7 @@ class Relogio:
     def run(self):
 
         if self.id == '1': 
-            self.master == True
+            self.master = True
 
         while self.running:
             time.sleep(self.drift)  # Espera pelo intervalo de drift
@@ -123,7 +124,7 @@ class Relogio:
         try:
             # Realiza a requisição para ajustar o tempo do relógio
             new_times[f'{self.id}'] = self.get_time()
-            requests.post(f"{relogio_info['url']}/adjust_time", json={'new_times': new_times})
+            requests.post(f"{relogio_info['url']}/adjust_times", json={'new_times': new_times})
             # Atualiza os tempos na instância local se new_times for fornecido
             if new_times:
                 for rid, time_value in new_times.items():
@@ -131,6 +132,7 @@ class Relogio:
                         self.relogios[rid]['time'] = time_value
         except requests.exceptions.RequestException:
             pass  # Ignora exceções de requisição
+    
 
     def monitor_master(self):
         while self.running:
@@ -183,4 +185,7 @@ class Relogio:
             self.master = True
             print("Este relógio agora é o novo mestre.")
         else:
+            self.master = False
             print(f"O relógio {potential_master_id} foi eleito como o novo mestre.")
+
+        return highest_time

@@ -1,19 +1,19 @@
 import os
 import threading
 import logging 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from relogio import Relogio
 import time 
 
 app = Flask(__name__)
 
 # Configurações de logging para suprimir logs de requisição do Flask
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+#log = logging.getLogger('werkzeug')
+#log.setLevel(logging.ERROR)
 
 # Configurações do Relógio e Rede
 # ID do relógio corrente obtido de variáveis de ambiente (padrão: '2')
-ID_RELOGIO = os.getenv('ID_RELOGIO', '1')
+ID_RELOGIO = os.getenv('ID_RELOGIO', '2')
 
 # IP e porta dos relógios configurados via variáveis de ambiente (com valores padrão)
 IP_RELOGIO1 = os.getenv('IP_RELOGIO1', "127.0.0.1")
@@ -46,23 +46,25 @@ def get_time(id):
     return jsonify({'time': f'{relogio.get_time()}'}), 200
 
 # Rota para ajustar a hora do relógio
-@app.route('/adjust_time', methods=['POST'])
+@app.route('/adjust_times', methods=['POST'])
 def adjust_time():
     data = request.get_json()
     new_times = data.get('new_times', {})
 
     try:
         # Atualiza os tempos dos relógios na instância de Relogio
-    
         for relogio_id, new_time in new_times.items():
             if relogio_id in relogio.relogios:
-                relogio.relogios[relogio_id]['time'] = new_time
+                relogio.relogios[relogio_id]['time'] = new_time 
+
+        new_time = relogio.elect_new_master() 
+
+        relogio.time = new_time
 
         return jsonify({'message': 'Tempo ajustado com sucesso', 'new_times': relogio.relogios}), 200
     except Exception as e:
         print(f"Ocorreu uma exceção {e}")
         return jsonify({'message': 'Erro ao tentar ajustar o tempo'}), 500
-
 
 @app.route('/is_master_alive', methods=['GET'])
 def is_master_alive():
@@ -73,6 +75,47 @@ def is_master_alive():
 def elect_new_master():
     relogio.elect_new_master()
     return jsonify({'message': 'Eleição de novo mestre realizada'}), 200
+
+# Rota para alterar o horário do relógio
+@app.route('/alter_time', methods=['POST'])
+def alter_time(): 
+    data = request.get_json()
+    new_time = data.get('new_time')
+
+    if new_time is None:
+        return jsonify({'message': 'Novo horário é obrigatório'}), 400
+
+    try:
+        relogio.alter_time(float(new_time))
+        return jsonify({'message': 'Horário alterado com sucesso', 'new_time': new_time}), 200
+    except Exception as e:
+        print(f"Ocorreu uma exceção {e}")
+        return jsonify({'message': 'Erro ao tentar alterar o horário'}), 500
+
+# Rota para alterar o drift do relógio
+@app.route('/alter_drift', methods=['POST'])
+def alter_drift(): 
+    data = request.get_json()
+    new_drift = data.get('new_drift')
+
+    if new_drift is None:
+        return jsonify({'message': 'Novo drift é obrigatório'}), 400
+
+    try:
+        relogio.alter_drift(float(new_drift))
+        return jsonify({'message': 'Drift alterado com sucesso', 'new_drift': new_drift}), 200
+    except Exception as e:
+        print(f"Ocorreu uma exceção {e}")
+        return jsonify({'message': 'Erro ao tentar alterar o drift'}), 500
+
+@app.route('/get_clock_id', methods=['GET'])
+def get_clock_id():
+    return jsonify({'clock_id': ID_RELOGIO}), 200
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 
 # Função para monitorar a hora do relógio em tempo real
 def monitor_clock():
@@ -90,9 +133,8 @@ def show_menu():
         print("\nMenu:")
         print("1. Inserir um novo valor de drift do relógio")
         print("2. Inserir um novo valor para a hora do relógio")
-        print("3. Tornar este relógio mestre")
-        print("4. Monitorar hora do relógio")
-        print("5. Sair")
+        print("3. Monitorar hora do relógio")
+        print("4. Sair")
 
         option = input("\nEscolha uma opção: ")
 
