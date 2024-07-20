@@ -164,7 +164,7 @@ def show_menu():
 # Função principal que inicia o relógio e exibe o menu
 def main():
     relogio.start()
-    show_menu()
+    #show_menu()
 
 # Execução do servidor Flask em uma thread separada e início da função principal
 if __name__ == "__main__":
