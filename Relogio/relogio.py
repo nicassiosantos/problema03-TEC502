@@ -112,7 +112,7 @@ class Relogio:
                 'request_time': self.get_time()  # Marca o tempo da requisição
             }
             # Realiza a requisição para obter o tempo do relógio
-            response = requests.get(f"{relogio_info['url']}/get_time/{relogio_id}")
+            response = requests.get(f"{relogio_info['url']}/get_time/{relogio_id}", timeout=4)
             if response.status_code == 200:
                 request_times[relogio_id]['response_time'] = self.get_time()  # Marca o tempo da resposta
                 request_times[relogio_id]['avg_time'] = int((self.get_time() - request_times[relogio_id]['request_time']) / 2)
@@ -162,7 +162,7 @@ class Relogio:
         # Verificar se o relógio com o maior tempo está vivo
         if master_id:
             try:
-                response = requests.get(f"{self.relogios[master_id]['url']}/get_time/{master_id}")
+                response = requests.get(f"{self.relogios[master_id]['url']}/get_time/{master_id}", timeout=5)
                 if response.status_code == 200:
                     return True
             except requests.exceptions.RequestException:
